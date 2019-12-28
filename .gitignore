@@ -1,7 +1,0 @@
-*.sh
-*.pyc
-*.ipynb_checkpoints
-*.wav
-*.tar.gz
-train
-web/ckpts
