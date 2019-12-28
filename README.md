@@ -16,4 +16,11 @@ After 19,244 steps trained on _oily, water, rag, suit_ and _year_ from TIMIT, th
 4. \[0, 0, 0, 1, 0\]: _oily_
 5. \[0, 0, 0, 0, 1\]: _rag_
 
-[Audio sample] (http://faculty.washington.edu/begus/files/github19244c_2_5words.wav)
+[Audio sample 1](http://faculty.washington.edu/begus/files/github19244c_2_5words.wav)
+[Audio sample 2](http://faculty.washington.edu/begus/files/github19244c_2_5words.wav)
+
+To change number of categorical latent variables:
+
+```
+--num_categ n
+```
