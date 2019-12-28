@@ -13,7 +13,7 @@ import tensorflow as tf
 from six.moves import xrange
 
 import loader
-from wavegan import WaveGANGenerator, WaveGANDiscriminator
+from cinfowavegan import WaveGANGenerator, WaveGANDiscriminator, WaveGANQ
 
 
 """
@@ -40,7 +40,18 @@ def train(fps, args):
         prefetch_gpu_num=args.data_prefetch_gpu_num)[:, :, 0]
 
   # Make z vector
-  z = tf.random_uniform([args.train_batch_size, args.wavegan_latent_dim], -1., 1., dtype=tf.float32)
+  def random_c():
+    idxs = np.random.randint(args.num_categ, size=args.train_batch_size)
+    c = np.zeros((args.train_batch_size, args.num_categ))
+    c[np.arange(args.train_batch_size), idxs] = 1
+    return c
+  def random_z():
+    rz = np.zeros([args.train_batch_size, args.wavegan_latent_dim])
+    rz[:, : args.num_categ] = random_c()
+    rz[:, args.num_categ : ] = np.random.uniform(-1., 1., size=(args.train_batch_size, args.wavegan_latent_dim - args.num_categ))        
+    return rz;
+
+  z = tf.placeholder(tf.float32, (args.train_batch_size,  args.wavegan_latent_dim))
 
   # Make generator
   with tf.variable_scope('G'):
@@ -88,10 +99,26 @@ def train(fps, args):
   print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
   print('-' * 80)
 
+  
+
   # Make fake discriminator
   with tf.name_scope('D_G_z'), tf.variable_scope('D', reuse=True):
     D_G_z = WaveGANDiscriminator(G_z, **args.wavegan_d_kwargs)
 
+  # Make Q
+  with tf.variable_scope('Q'):
+    Q_G_z = WaveGANQ(G_z, **args.wavegan_q_kwargs)
+  Q_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Q')
+
+  # Print Q summary
+  print('Q vars')
+  nparams = 0
+  for v in Q_vars:
+    v_shape = v.get_shape().as_list()
+    v_n = reduce(lambda x, y: x * y, v_shape)
+    print('{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name))
+  print('-' * 80)
+  
   # Create loss
   D_clip_weights = None
   if args.wavegan_loss == 'dcgan':
@@ -134,8 +161,17 @@ def train(fps, args):
         )
       D_clip_weights = tf.group(*clip_ops)
   elif args.wavegan_loss == 'wgan-gp':
+
+    def q_cost_tf(z, q):
+        z_cat = z[:, : args.num_categ]
+        q_cat = q[:, : args.num_categ]
+        lcat = tf.nn.softmax_cross_entropy_with_logits(labels=z_cat, logits=q_cat)
+        return tf.reduce_mean(lcat);
+
+    
     G_loss = -tf.reduce_mean(D_G_z)
     D_loss = tf.reduce_mean(D_G_z) - tf.reduce_mean(D_x)
+    Q_loss = q_cost_tf(z, Q_G_z)
 
     alpha = tf.random_uniform(shape=[args.train_batch_size, 1, 1], minval=0., maxval=1.)
     differences = G_z - x
@@ -153,6 +189,7 @@ def train(fps, args):
 
   tf.summary.scalar('G_loss', G_loss)
   tf.summary.scalar('D_loss', D_loss)
+  tf.summary.scalar('Q_loss', Q_loss)
 
   # Create (recommended) optimizer
   if args.wavegan_loss == 'dcgan':
@@ -181,6 +218,8 @@ def train(fps, args):
         learning_rate=1e-4,
         beta1=0.5,
         beta2=0.9)
+    Q_opt = tf.train.RMSPropOptimizer(
+        learning_rate=1e-4)
   else:
     raise NotImplementedError()
 
@@ -188,6 +227,7 @@ def train(fps, args):
   G_train_op = G_opt.minimize(G_loss, var_list=G_vars,
       global_step=tf.train.get_or_create_global_step())
   D_train_op = D_opt.minimize(D_loss, var_list=D_vars)
+  Q_train_op = Q_opt.minimize(Q_loss, var_list=Q_vars+G_vars)  
 
   # Run training
   with tf.train.MonitoredTrainingSession(
@@ -199,14 +239,15 @@ def train(fps, args):
     while True:
       # Train discriminator
       for i in xrange(args.wavegan_disc_nupdates):
-        sess.run(D_train_op)
-
+        sess.run([D_loss,D_train_op], feed_dict={z: random_z()})
+        
+        
         # Enforce Lipschitz constraint for WGAN
         if D_clip_weights is not None:
           sess.run(D_clip_weights)
 
       # Train generator
-      sess.run(G_train_op)
+      sess.run([G_loss,Q_loss,G_train_op,Q_train_op], feed_dict={z: random_z()})
 
 
 """
@@ -552,6 +593,8 @@ if __name__ == '__main__':
       help='Length of 1D filter kernels')
   wavegan_args.add_argument('--wavegan_dim', type=int,
       help='Dimensionality multiplier for model of G and D')
+  wavegan_args.add_argument('--num_categ', type=int,
+      help='Number of categorical variables')
   wavegan_args.add_argument('--wavegan_batchnorm', action='store_true', dest='wavegan_batchnorm',
       help='Enable batchnorm')
   wavegan_args.add_argument('--wavegan_disc_nupdates', type=int,
@@ -603,6 +646,7 @@ if __name__ == '__main__':
     wavegan_latent_dim=100,
     wavegan_kernel_len=25,
     wavegan_dim=64,
+    num_categ=10,
     wavegan_batchnorm=False,
     wavegan_disc_nupdates=5,
     wavegan_loss='wgan-gp',
@@ -643,6 +687,13 @@ if __name__ == '__main__':
     'dim': args.wavegan_dim,
     'use_batchnorm': args.wavegan_batchnorm,
     'phaseshuffle_rad': args.wavegan_disc_phaseshuffle
+  })
+  setattr(args, 'wavegan_q_kwargs', {
+    'kernel_len': args.wavegan_kernel_len,
+    'dim': args.wavegan_dim,
+    'use_batchnorm': args.wavegan_batchnorm,
+    'phaseshuffle_rad': args.wavegan_disc_phaseshuffle,
+    'num_categ': args.num_categ
   })
 
   if args.mode == 'train':
