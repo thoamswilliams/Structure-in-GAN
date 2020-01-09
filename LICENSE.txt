@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2019 Christopher Donahue
-Additions and modifications (fiwgan.py) (c) 2020 Gasper Begus
+Additions and modifications (fiwgan.py & ciwgan.py) (c) 2020 Gasper Begus
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
