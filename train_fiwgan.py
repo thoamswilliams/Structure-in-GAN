@@ -166,7 +166,7 @@ def train(fps, args):
     q_sigmoid = tf.nn.sigmoid_cross_entropy_with_logits(labels=z_q_loss, logits=q_q_loss)
     G_loss = -tf.reduce_mean(D_G_z)
     D_loss = tf.reduce_mean(D_G_z) - tf.reduce_mean(D_x)
-    Q_loss = tf.reduce_sum(q_sigmoid)
+    Q_loss = tf.reduce_mean(q_sigmoid)
 
     alpha = tf.random_uniform(shape=[args.train_batch_size, 1, 1], minval=0., maxval=1.)
     differences = G_z - x
