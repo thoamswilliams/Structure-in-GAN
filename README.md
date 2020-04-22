@@ -1,5 +1,7 @@
 # fiwGAN (Featural InfoWaveGAN): Lexical Learning in Generative Adversarial Phonology
 
+PAPER HERE: https://psyarxiv.com/mwb5u
+
 In `fiwGAN.py`. An architecture for modeling lexical learning from raw acoustic inputs called Featural InfoWaveGAN (fiwGAN) that combines Deep Convolutional GAN architecture for audio data (WaveGAN) with categorical variables in information theoretic proposal InfoGAN. Unlike InfoGAN, latent code is distributed binomially and the training is performed with sigmoid cross-entropy. Based on [WaveGAN](https://github.com/chrisdonahue/wavegan) (Donahue et al. 2019) and InfoGAN (Chen et al. 2016), partially also on code by [Rodionov](https://github.com/singnet/semantic-vision/blob/master/experiments/concept_learning/gans/info-wgan-gp/10_originfo_sepQ_v2_lr1e-3/train.py) (2018).
 
 <img src="static/fiwgan_arch.png"/>
