@@ -165,7 +165,7 @@ def train(fps, args):
     def q_cost_tf(z, q):
         z_cat = z[:, : args.num_categ]
         q_cat = q[:, : args.num_categ]
-        lcat = tf.nn.softmax_cross_entropy_with_logits(labels=z_cat, logits=q_cat)
+        lcat = tf.nn.sigmoid_cross_entropy_with_logits(labels=z_cat, logits=q_cat)
         return tf.reduce_mean(lcat);
 
     
@@ -635,7 +635,7 @@ if __name__ == '__main__':
   parser.set_defaults(
     data_dir=None,
     data_sample_rate=16000,
-    data_slice_len=16384,
+    data_slice_len=16384*2,
     data_num_channels=1,
     data_overlap_ratio=0.,
     data_first_slice=False,
