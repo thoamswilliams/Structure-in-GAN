@@ -60,25 +60,25 @@ def train(fps, args):
   # Approach 2: encodes the order by doubling the code length, n.b. in 
   # the arguments, num_categ should be set to double the number of unique words
   def random_c():
-    assert args.num_categ % 2 == 0, "num_categ should be double the number of unique words"
-    
-    c = np.zeros((args.train_batch_size, args.num_categ))
-    idxs = np.random.randint(args.num_categ//2, size=(2, args.train_batch_size))
-    #adjust indicies to create the second code
-    idxs[1,:] += args.num_categ//2
+      assert args.num_categ % 2 == 0, "num_categ should be double the number of unique words"
+      
+      c = np.zeros((args.train_batch_size, args.num_categ))
+      idxs = np.random.randint(args.num_categ//2, size=(2, args.train_batch_size))
+      #adjust indicies to create the second code
+      idxs[1,:] += args.num_categ//2
 
-    #when the same code is in both the first and second slot, change to a one-hot vector
-    for i in range(args.train_batch_size):
-        if(idxs[0,i]+args.num_categ == idxs[1,i]):
+      #when the same code is in both the first and second slot, change to a one-hot vector
+      for i in range(args.train_batch_size):
+          if(idxs[0,i]+args.num_categ//2 == idxs[1,i]):
 
-            #randomize whether the 1 goes in the first or second slot
-            if (np.random.randint(2) == 0):
-                idxs[0,i] = idxs[1,i]
-            else:
-                idxs[1,i] = idxs[0,i]
-                
-    c[np.arange(args.train_batch_size), idxs] = 1
-    return c
+              #randomize whether the 1 goes in the first or second slot
+              if (np.random.randint(2) == 0):
+                  idxs[0,i] = idxs[1,i]
+              else:
+                  idxs[1,i] = idxs[0,i]
+                  
+      c[np.arange(args.train_batch_size), idxs] = 1
+      return c
 
 
   def random_z():
@@ -201,9 +201,8 @@ def train(fps, args):
     def q_cost_tf(z, q):
         z_cat = z[:, : args.num_categ]
         q_cat = q[:, : args.num_categ]
-        # lcat = tf.nn.softmax_cross_entropy_with_logits(labels=z_cat, logits=q_cat)
         lcat = tf.nn.sigmoid_cross_entropy_with_logits(labels=z_cat, logits=q_cat)
-        return tf.reduce_mean(lcat)
+        return tf.reduce_mean(lcat);
 
     
     G_loss = -tf.reduce_mean(D_G_z)
@@ -672,7 +671,7 @@ if __name__ == '__main__':
   parser.set_defaults(
     data_dir=None,
     data_sample_rate=16000,
-    data_slice_len=16384,
+    data_slice_len=16384*2,
     data_num_channels=1,
     data_overlap_ratio=0.,
     data_first_slice=False,
