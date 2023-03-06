@@ -1,12 +1,12 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=2var_test
+#SBATCH --job-name=2varGAN
 #
 # Account:
 #SBATCH --account=fc_bsclab
 #
 # Partition:
-#SBATCH --partition=savio2_gpu
+#SBATCH --partition=savio2_1080ti
 #
 # Number of nodes:
 #SBATCH --nodes=1
@@ -24,9 +24,10 @@
 #SBATCH --gres=gpu:1
 #
 # Wall clock limit:
-#SBATCH --time=00:30:00
+#SBATCH --time=16:00:00
 #
 ## Command(s) to run (example):
-module load tensorflow/1.12.0-py36-pip-gpu
+module load ml/tensorflow/1.12.0-py36
 cd Structure-in-GAN
-python3 ./train_ciwgan.py train './2_word_concat/train_dir/' --data_dir './2_word_concat/generated_data/' --data_slice_len 32768 --num_categ 6
+nohup python3 backup.py '/global/scratch/users/thomaslu/train_dir2' 60 &
+python3 ./train_ciwgan.py train '/global/scratch/users/thomaslu/train_dir2/' --data_dir './2_word_concat/generated_data/' --data_slice_len 32768 --num_categ 6 --data_first_slice --data_pad_end --data_fast_wav
