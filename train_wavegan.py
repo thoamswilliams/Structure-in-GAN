@@ -83,8 +83,8 @@ def train(fps, args):
 
   def random_z():
     rz = np.zeros([args.train_batch_size, args.wavegan_latent_dim])
-    rz[:, : args.num_categ] = random_c()
-    rz[:, args.num_categ : ] = np.random.uniform(-1., 1., size=(args.train_batch_size, args.wavegan_latent_dim - args.num_categ))        
+    # rz[:, : args.num_categ] = random_c()
+    rz[:, : ] = np.random.uniform(-1., 1., size=(args.train_batch_size, args.wavegan_latent_dim))        
     return rz
 
   z = tf.placeholder(tf.float32, (args.train_batch_size,  args.wavegan_latent_dim))
