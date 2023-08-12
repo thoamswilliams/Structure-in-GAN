@@ -263,7 +263,7 @@ def train(fps, args):
   G_train_op = G_opt.minimize(G_loss, var_list=G_vars,
       global_step=tf.train.get_or_create_global_step())
   D_train_op = D_opt.minimize(D_loss, var_list=D_vars)
-  Q_train_op = Q_opt.minimize(Q_loss, var_list=Q_vars+G_vars)  
+  Q_train_op = Q_opt.minimize(Q_loss, var_list=Q_vars)  
 
   # Run training
   with tf.train.MonitoredTrainingSession(
